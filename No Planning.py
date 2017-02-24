@@ -25,13 +25,13 @@ ALPHA = 0.1
 EPSILON = 1
 
 #Number of episodes to consider
-TOTAL_EPISODES_TO_CONSIDER = 1000
+TOTAL_EPISODES_TO_CONSIDER = 50
 
 #Maximum allowed episode length
 MAXIMUM_EPISODE_LENGTH = 100
 
 #Number of planning steps
-NUMBER_PLANNING_STEPS = 50
+NUMBER_PLANNING_STEPS = 0
 
 #All possible actions defined
 ACTION_UP = 'UP'
@@ -275,7 +275,7 @@ TOTAL_EPISODES_TO_CONSIDER = 50
 MAXIMUM_EPISODE_LENGTH = 1000
 
 #Number of planning steps
-NUMBER_PLANNING_STEPS = 50
+NUMBER_PLANNING_STEPS = 0
 
 all_observed_state_action_pairs = set()
 

@@ -4,6 +4,11 @@
 # In[1]:
 
 import random
+import os
+import time
+'''
+%pylab inline
+'''
 
 
 # All constants
@@ -20,7 +25,7 @@ ALPHA = 0.1
 EPSILON = 1
 
 #Number of episodes to consider
-TOTAL_EPISODES_TO_CONSIDER = 1000
+TOTAL_EPISODES_TO_CONSIDER = 50
 
 #Maximum allowed episode length
 MAXIMUM_EPISODE_LENGTH = 100
@@ -40,6 +45,17 @@ all_actions = [ACTION_UP, ACTION_RIGHT, ACTION_DOWN, ACTION_LEFT]
 #Start and end of any episode
 START_STATE = '18'
 END_STATE = '08'
+
+#Forbidden states of the Dyna Maze
+FORBIDDEN_STATES = ['11', '20', '29', '41', '07', '16', '25']
+
+#WAIT TIME
+wait_time = 0.05
+
+#Defining colors for highlighting important aspects
+GREEN = lambda x: '\x1b[32m{}\x1b[0m'.format(x)
+BLUE = lambda x: '\x1b[34m{}\x1b[0m'.format(x)
+RED = lambda x: '\x1b[31m{}\x1b[0m'.format(x)
 
 
 # Defining the MDP
@@ -162,7 +178,7 @@ state_action_value_pairs = initializeStateActionValuePairs()
 def initializeGreedyPolicy():
     greedy_policy = {}
     for state in all_states:
-        greedy_policy[state] = ACTION_UP
+        greedy_policy[state] = ACTION_RIGHT
     return greedy_policy
 
 greedy_policy = initializeGreedyPolicy()
@@ -231,24 +247,44 @@ def printStateActionValuePairs(state_action_value_pairs):
     for state in all_states:
         print(state, "\t", "%.2f" % state_action_value_pairs[state][ACTION_UP], "\t", "%.2f" % state_action_value_pairs[state][ACTION_RIGHT], "\t", "%.2f" % state_action_value_pairs[state][ACTION_DOWN], "\t", "%.2f" % state_action_value_pairs[state][ACTION_LEFT],)
     print("\n\n")
+    
+def printDynaMaze(states_in_episode = []):
+    for state in all_states:
+        if (int(state) % 9) == 0:
+            print("\n")
+        
+        if state in states_in_episode:
+            state = state.replace(state, GREEN(state))
+            
+        if state in FORBIDDEN_STATES:
+            state = state.replace(state, RED(state))
+        
+        print(state, "\t", end = '')
+        
+    print("\n")
 
 
-# In[13]:
+# In[10]:
 
 EPSILON = 1
 
 #Number of episodes to consider
-TOTAL_EPISODES_TO_CONSIDER = 5
+TOTAL_EPISODES_TO_CONSIDER = 50
 
 #Maximum allowed episode length
-MAXIMUM_EPISODE_LENGTH = 300
+MAXIMUM_EPISODE_LENGTH = 1000
 
 #Number of planning steps
 NUMBER_PLANNING_STEPS = 50
 
 all_observed_state_action_pairs = set()
 
+all_episodes_length = []
+all_episodes = []
+
 for episode_iterator in range(TOTAL_EPISODES_TO_CONSIDER):
+    
+    current_episode = [START_STATE]
     
     EPSILON = (1/((0.2 * episode_iterator) + 1))
     
@@ -285,13 +321,47 @@ for episode_iterator in range(TOTAL_EPISODES_TO_CONSIDER):
         #    print("Validated")
             
         current_state = next_state
+        current_episode.append(current_state)
         updatePolicy(state_action_value_pairs, greedy_policy)
+    
+    all_episodes.append(current_episode)
+    all_episodes_length.append((current_episode_length + 1))
         
-printStateActionValuePairs(state_action_value_pairs)
-printPolicy(greedy_policy)        
+#printStateActionValuePairs(state_action_value_pairs)
+#printPolicy(greedy_policy)     
 
 
 # In[ ]:
 
+os.system('clear')
+for episode_number in range(len(all_episodes)):
+    episode = all_episodes[episode_number]
+    for step_number in range(len(episode)):
+        print("Episode number", str(episode_number))
+        printDynaMaze(episode[0:step_number])
+        time.sleep(wait_time)
+        os.system('clear')
+    time.sleep(4 * wait_time)
 
+
+# In[11]:
+
+'''
+episode_number = [x for x in range(50)]
+plot(episode_number, all_episodes_length)
+grid(1)
+ylabel('Steps per episode')
+xlabel('Episodes -> ')
+'''
+
+
+# In[11]:
+
+'''
+episode_number = [x for x in range(50)]
+plot(episode_number, all_episodes_length)
+grid(1)
+ylabel('Steps per episode')
+xlabel('Episodes -> ')
+'''
 
