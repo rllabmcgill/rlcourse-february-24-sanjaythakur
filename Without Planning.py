@@ -6,48 +6,11 @@
 import random
 import os
 import time
-'''
-%pylab inline
-'''
 
 
 # All constants
 
 # In[2]:
-
-#Discount-factor
-GAMMA = 0.95
-
-#ALPHA or step-size
-ALPHA = 0.1
-
-#Defining the EPSILON which would ensure regular exploration. Our EPSILON will decrease linearly with each iteration of a episode and will eventually fade away to 0 .
-EPSILON = 1
-
-#Number of episodes to consider
-TOTAL_EPISODES_TO_CONSIDER = 50
-
-#Maximum allowed episode length
-MAXIMUM_EPISODE_LENGTH = 100
-
-#Number of planning steps
-NUMBER_PLANNING_STEPS = 0
-
-#All possible actions defined
-ACTION_UP = 'UP'
-ACTION_DOWN = 'DOWN'
-ACTION_LEFT = 'LEFT'
-ACTION_RIGHT = 'RIGHT'
-
-#All actions
-all_actions = [ACTION_UP, ACTION_RIGHT, ACTION_DOWN, ACTION_LEFT]
-
-#Start and end of any episode
-START_STATE = '18'
-END_STATE = '08'
-
-#Forbidden states of the Dyna Maze
-FORBIDDEN_STATES = ['11', '20', '29', '41', '07', '16', '25']
 
 #WAIT TIME
 wait_time = 0.05
@@ -58,10 +21,23 @@ BLUE = lambda x: '\x1b[34m{}\x1b[0m'.format(x)
 RED = lambda x: '\x1b[31m{}\x1b[0m'.format(x)
 
 
-# Defining the MDP
+# Defining the environment
 
 # In[3]:
 
+#Forbidden states of the Dyna Maze
+FORBIDDEN_STATES = ['11', '20', '29', '41', '07', '16', '25']
+
+#All possible actions defined
+ACTION_UP = 'UP'
+ACTION_DOWN = 'DOWN'
+ACTION_LEFT = 'LEFT'
+ACTION_RIGHT = 'RIGHT'
+        
+#All actions
+all_actions = [ACTION_UP, ACTION_RIGHT, ACTION_DOWN, ACTION_LEFT]
+
+#All states in Dyna-Maze
 all_states = ['00', '01', '02', '03', '04', '05', '06', '07', '08',
             '09', '10', '11', '12', '13', '14', '15', '16', '17', 
             '18', '19', '20', '21', '22', '23', '24', '25', '26',
@@ -69,11 +45,7 @@ all_states = ['00', '01', '02', '03', '04', '05', '06', '07', '08',
             '36', '37', '38', '39', '40', '41', '42', '43', '44',
             '45', '46', '47', '48', '49', '50', '51', '52', '53']
 
-
-# Parameters to mimic the environment. Remember that these parameters won't be known to us, not at least before we start moving our agent.
-
-# In[4]:
-
+#All transitions in Dyna-Maze
 all_transitions =  {
     '00': {ACTION_UP : '00', ACTION_RIGHT : '01', ACTION_DOWN: '09', ACTION_LEFT: '00'},
     '01': {ACTION_UP : '01', ACTION_RIGHT : '02', ACTION_DOWN: '10', ACTION_LEFT: '00'},
@@ -132,13 +104,15 @@ all_transitions =  {
 }
 
 
-# In[5]:
+# All functions to set the parameters and datastructures of the environment are defined here.
 
-def defineStateActionImmediateRewards():
+# In[4]:
+
+def defineStateActionImmediateRewards(END_STATE):
     immediate_state_rewards = {}
     for state in all_states:
         action_rewards = {}
-        if state ==  END_STATE:
+        if state == END_STATE:
             for action in all_actions:
                 action_rewards[action] = 1
         else:
@@ -152,10 +126,8 @@ def defineStateActionImmediateRewards():
         immediate_state_rewards[state] = action_rewards
     return immediate_state_rewards
 
-immediate_state_rewards = defineStateActionImmediateRewards()
 
-
-# In[6]:
+# In[5]:
 
 def initializeStateActionValuePairs():        
     state_action_value_pairs = {}
@@ -167,12 +139,8 @@ def initializeStateActionValuePairs():
         
     return state_action_value_pairs
 
-state_action_value_pairs = initializeStateActionValuePairs()
 
-
-# Parameters that are affected by the direct reinforcement learning step
-
-# In[7]:
+# In[6]:
 
 # We initialize our policy. We initialize our state action values with all optimistic values so that we don't get stuck at any deadlocks.
 def initializeGreedyPolicy():
@@ -181,12 +149,8 @@ def initializeGreedyPolicy():
         greedy_policy[state] = ACTION_RIGHT
     return greedy_policy
 
-greedy_policy = initializeGreedyPolicy()
 
-
-# All model related variables in Dyna architecture
-
-# In[8]:
+# In[7]:
 
 def initializeModelStateActionBag():
     state_action_bag = {}
@@ -197,10 +161,10 @@ def initializeModelStateActionBag():
         state_action_bag[state] = action_map
     return state_action_bag
 
-state_action_bag = initializeModelStateActionBag()
 
+# All other helper functions needed are defined here
 
-# In[9]:
+# In[8]:
 
 def updatePolicy(state_action_value_pairs, greedy_policy):
     for state, action_values in state_action_value_pairs.items():
@@ -217,6 +181,7 @@ def updatePolicy(state_action_value_pairs, greedy_policy):
             highest_value = action_values[ACTION_LEFT]
             
         greedy_policy[state] = highest_valued_action
+    return greedy_policy
 
 def chooseActionStochastically():
     random_throw = random.uniform(0, 1)
@@ -264,104 +229,85 @@ def printDynaMaze(states_in_episode = []):
     print("\n")
 
 
-# In[10]:
+# In[9]:
 
-EPSILON = 1
-
-#Number of episodes to consider
-TOTAL_EPISODES_TO_CONSIDER = 50
-
-#Maximum allowed episode length
-MAXIMUM_EPISODE_LENGTH = 1000
-
-#Number of planning steps
-NUMBER_PLANNING_STEPS = 0
-
-all_observed_state_action_pairs = set()
-
-all_episodes_length = []
-all_episodes = []
-
-for episode_iterator in range(TOTAL_EPISODES_TO_CONSIDER):
-    
-    current_episode = [START_STATE]
-    
-    EPSILON = (1/((0.2 * episode_iterator) + 1))
-    
-    current_state = START_STATE
-    current_episode_length = 0
-    while(current_state != END_STATE and current_episode_length < MAXIMUM_EPISODE_LENGTH):
-        current_episode_length += 1
+class DynaAgent():
+    def __init__(self, GAMMA = 0.95, ALPHA = 0.1, EPSILON = 1, TOTAL_EPISODES_TO_CONSIDER = 50, MAXIMUM_EPISODE_LENGTH = 800, NUMBER_PLANNING_STEPS = 50, START_STATE = '18', END_STATE = '08', PLAN = True):
+        #Discount-factor
+        self.GAMMA = GAMMA
+        #ALPHA or step-size
+        self.ALPHA = ALPHA
+        #Defining the EPSILON which would ensure regular exploration. Our EPSILON will decrease linearly with each iteration of a episode and will eventually fade away to 0 .
+        self.EPSILON = EPSILON
+        #Number of episodes to consider
+        self.TOTAL_EPISODES_TO_CONSIDER = TOTAL_EPISODES_TO_CONSIDER
+        #Maximum allowed episode length
+        self.MAXIMUM_EPISODE_LENGTH = MAXIMUM_EPISODE_LENGTH
+        #Number of planning steps
+        self.NUMBER_PLANNING_STEPS = NUMBER_PLANNING_STEPS
+        #Start State
+        self.START_STATE = START_STATE
+        #End State
+        self.END_STATE = END_STATE
+        #Should incorporate planning in decision-making or not
+        self.PLAN = PLAN   
         
-        random_throw = random.uniform(0, 1)
-        if random_throw < EPSILON:
-            current_action = chooseActionStochastically()
-        else:
-            current_action = greedy_policy[current_state]
-    
-        #print(current_state, current_action)
-        next_state, reward = takeAction(immediate_state_rewards, current_state, current_action)
-        
-        state_action_value_pairs[current_state][current_action] = state_action_value_pairs[current_state][current_action] + (ALPHA * (reward + (GAMMA * state_action_value_pairs[next_state][greedy_policy[next_state]]) - state_action_value_pairs[current_state][current_action]))
-        
-        all_observed_state_action_pairs.add((current_state, current_action))
-        
-        state_action_bag[current_state][current_action] = (reward, next_state)
-        
-        for planning_iterator in range(NUMBER_PLANNING_STEPS):
-            random_picker = int(random.uniform(0, len(all_observed_state_action_pairs)))
-            state_action_pair = list(all_observed_state_action_pairs)[random_picker]
-            _state = state_action_pair[0]
-            _action = state_action_pair[1]
-            _reward, _next_state = state_action_bag[_state][_action]
-            
-            state_action_value_pairs[_state][_action] = state_action_value_pairs[_state][_action] + (ALPHA * (_reward + (GAMMA * state_action_value_pairs[_next_state][greedy_policy[_next_state]]) - state_action_value_pairs[_state][_action]))
-        
-        #if next_state == END_STATE:
-        #    print("Validated")
-            
-        current_state = next_state
-        current_episode.append(current_state)
-        updatePolicy(state_action_value_pairs, greedy_policy)
-    
-    all_episodes.append(current_episode)
-    all_episodes_length.append((current_episode_length + 1))
-        
-#printStateActionValuePairs(state_action_value_pairs)
-#printPolicy(greedy_policy)     
+    #Parameters to mimic the environment. Remember that these parameters won't be known to us, not at least before we start moving our agent.
+    def setAllDataStructures(self):
+        self.immediate_state_rewards = defineStateActionImmediateRewards(self.END_STATE)
+        self.state_action_value_pairs = initializeStateActionValuePairs()
+        self.greedy_policy = initializeGreedyPolicy()
+        self.state_action_bag = initializeModelStateActionBag()
+     
+    # This function runs the agent which plans and learns simultaneously how to reach the goal state.
+    def runAgent(self):
+        all_observed_state_action_pairs = set()
+        all_episodes_length = []
+        all_episodes = []
+        for episode_iterator in range(self.TOTAL_EPISODES_TO_CONSIDER):
+            current_episode = [self.START_STATE]
+            self.EPSILON = (1/((0.2 * episode_iterator) + 1))
+            current_state = self.START_STATE
+            current_episode_length = 0
+            while(current_state != self.END_STATE and current_episode_length < self.MAXIMUM_EPISODE_LENGTH):
+                current_episode_length += 1
+                random_throw = random.uniform(0, 1)
+                if random_throw < self.EPSILON:
+                    current_action = chooseActionStochastically()
+                else:
+                    current_action = self.greedy_policy[current_state]
+                next_state, reward = takeAction(self.immediate_state_rewards, current_state, current_action)
+                self.state_action_value_pairs[current_state][current_action] = self.state_action_value_pairs[current_state][current_action] + (self.ALPHA * (reward + (self.GAMMA * self.state_action_value_pairs[next_state][self.greedy_policy[next_state]]) - self.state_action_value_pairs[current_state][current_action]))
+                all_observed_state_action_pairs.add((current_state, current_action))
+                self.state_action_bag[current_state][current_action] = (reward, next_state)
+                if self.PLAN == True:
+                    for planning_iterator in range(self.NUMBER_PLANNING_STEPS):
+                        random_picker = int(random.uniform(0, len(all_observed_state_action_pairs)))
+                        state_action_pair = list(all_observed_state_action_pairs)[random_picker]
+                        _state = state_action_pair[0]
+                        _action = state_action_pair[1]
+                        _reward, _next_state = self.state_action_bag[_state][_action]
+                        self.state_action_value_pairs[_state][_action] = self.state_action_value_pairs[_state][_action] + (self.ALPHA * (_reward + (self.GAMMA * self.state_action_value_pairs[_next_state][self.greedy_policy[_next_state]]) - self.state_action_value_pairs[_state][_action]))
+                current_state = next_state
+                current_episode.append(current_state)
+                self.greedy_policy = updatePolicy(self.state_action_value_pairs, self.greedy_policy)
+            all_episodes.append(current_episode)
+            all_episodes_length.append((current_episode_length + 1)) 
+        return all_episodes, all_episodes_length
 
+# In[12]:
 
-# In[ ]:
+#An agent with no planning
+agent_without_planning = DynaAgent(PLAN=False)
+agent_without_planning.setAllDataStructures()
+all_episodes_without_planning, all_episodes_length_without_planning = agent_without_planning.runAgent()
 
 os.system('clear')
-for episode_number in range(len(all_episodes)):
-    episode = all_episodes[episode_number]
+for episode_number in range(len(all_episodes_without_planning)):
+    episode = all_episodes_without_planning[episode_number]
     for step_number in range(len(episode)):
         print("Episode number", str(episode_number))
         printDynaMaze(episode[0:step_number])
         time.sleep(wait_time)
         os.system('clear')
     time.sleep(4 * wait_time)
-
-
-# In[11]:
-
-'''
-episode_number = [x for x in range(50)]
-plot(episode_number, all_episodes_length)
-grid(1)
-ylabel('Steps per episode')
-xlabel('Episodes -> ')
-'''
-
-
-# In[11]:
-
-'''
-episode_number = [x for x in range(50)]
-plot(episode_number, all_episodes_length)
-grid(1)
-ylabel('Steps per episode')
-xlabel('Episodes -> ')
-'''
-
